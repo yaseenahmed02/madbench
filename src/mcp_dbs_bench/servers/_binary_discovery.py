@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import sys
 from pathlib import Path
 
 
@@ -38,6 +39,12 @@ def find_binary(name: str, *, explicit: str | None = None) -> str:
     """
     if explicit:
         return explicit
+
+    # Prefer the copy installed in the running environment, so the pinned
+    # server version wins over an unrelated global install on PATH.
+    in_env = Path(sys.executable).parent / name
+    if in_env.is_file() and os.access(in_env, os.X_OK):
+        return str(in_env)
 
     via_path = shutil.which(name)
     if via_path:

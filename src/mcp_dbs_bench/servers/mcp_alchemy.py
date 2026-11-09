@@ -20,7 +20,6 @@ Tool-name mapping (subprocess):
 from __future__ import annotations
 
 import logging
-import shutil
 from contextlib import asynccontextmanager
 from typing import Any, AsyncIterator
 
@@ -35,6 +34,7 @@ from mcp_dbs_bench.core.types import (
     ToolCallResponse,
     ToolManifest,
 )
+from mcp_dbs_bench.servers._binary_discovery import find_binary
 from mcp_dbs_bench.servers._mcp_alchemy_inprocess import McpAlchemyInProcessPlugin
 from mcp_dbs_bench.servers._response_parsers import parse_mcp_alchemy_payload
 from mcp_dbs_bench.servers._subprocess import SubprocessMCPClient
@@ -100,7 +100,7 @@ class McpAlchemyPlugin:
     ) -> None:
         self._use_subprocess = use_subprocess
         self._db_url = db_url
-        self._binary = binary or shutil.which(_DEFAULT_BINARY_NAME) or _DEFAULT_BINARY_NAME
+        self._binary = find_binary(_DEFAULT_BINARY_NAME, explicit=binary)
         self._stderr_log_path = stderr_log_path
         self._fallback = McpAlchemyInProcessPlugin()
 

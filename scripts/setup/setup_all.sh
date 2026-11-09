@@ -38,6 +38,7 @@ STEPS=(
   "06_load_tpch.sh"
   "06a_prepare_dbhub_postgres.sh"
   "06b_apply_constraints.sh"
+  "06c_set_query_limits.sh"
 )
 
 SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"

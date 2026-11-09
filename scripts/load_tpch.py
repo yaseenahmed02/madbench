@@ -102,6 +102,15 @@ def main() -> int:
                 }
     report["total_duration_s"] = time.time() - total_started
     print(json.dumps(report, indent=2))
+    failed = [
+        f"{backend} {sf_key}"
+        for backend, by_sf in report["backends"].items()
+        for sf_key, result in by_sf.items()
+        if not result["ok"]
+    ]
+    if failed:
+        _LOG.error("Load failed for: %s. See the tracebacks above.", ", ".join(failed))
+        return 1
     return 0
 
 

@@ -22,6 +22,7 @@ from __future__ import annotations
 import logging
 import os
 import shutil
+import sys
 import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -154,7 +155,14 @@ def mysql_native_url(*, scale_factor: int) -> str:
 
 
 def _resolve_mcp_alchemy_binary() -> str:
-    """Return the absolute path to ``mcp-alchemy`` or raise a clear error."""
+    """Return the absolute path to ``mcp-alchemy`` or raise a clear error.
+
+    The copy in the running environment comes first, so the pinned version is
+    used even when an unrelated global install is on PATH.
+    """
+    in_env = Path(sys.executable).parent / _MCP_ALCHEMY_BINARY_NAME
+    if in_env.is_file() and os.access(in_env, os.X_OK):
+        return str(in_env)
     path = shutil.which(_MCP_ALCHEMY_BINARY_NAME)
     if path:
         return path
@@ -183,6 +191,9 @@ def _resolve_node_binary(name: str) -> str:
     Mirrors :func:`mcp_dbs_bench.servers._binary_discovery.find_binary` so
     the two subsystems agree on which binary is picked up.
     """
+    in_env = Path(sys.executable).parent / name
+    if in_env.is_file() and os.access(in_env, os.X_OK):
+        return str(in_env)
     path = shutil.which(name)
     if path:
         return path

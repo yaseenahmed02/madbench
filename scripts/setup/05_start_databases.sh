@@ -57,9 +57,14 @@ log "Smoke test: connect to PostgreSQL inside the container..."
 docker exec "${PG_CONTAINER}" psql -U bench -d tpch -c "SELECT 1 AS ok;" >/dev/null
 ok "PostgreSQL on :55432 is accepting connections."
 
-# Track B caps every SQL statement at 10 minutes so a runaway agent query cannot stall a run.
-docker exec "${PG_CONTAINER}" psql -U bench -d tpch -c "ALTER ROLE bench SET statement_timeout = '10min';" >/dev/null
-ok "PostgreSQL statement_timeout for role bench set to 10min."
+# Loading and constraint checks can run longer than the benchmark's query limit,
+# so the limit is applied only after loading (step 06c).
+docker exec "${PG_CONTAINER}" psql -U bench -d tpch -c "ALTER ROLE bench RESET statement_timeout;" >/dev/null
+
+# The loader creates one MySQL database per scale factor (tpch_sf<N>); the bench
+# user needs rights on them, not only on the default tpch database.
+docker exec "${MYSQL_CONTAINER}" mysql -uroot -pbench -e "GRANT ALL PRIVILEGES ON \`tpch%\`.* TO 'bench'@'%'; FLUSH PRIVILEGES;" 2>/dev/null
+ok "MySQL user bench may create and use the tpch_sf<N> databases."
 
 if have_cmd mysql; then
   log "Smoke test: mysql connect to localhost:53306..."
