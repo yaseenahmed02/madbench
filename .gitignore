@@ -5,3 +5,5 @@ __pycache__/
 results/
 figures/*.pdf
 workloads/track_b/gold_results_sf*/
+.ruff_cache/
+.pytest_cache/

@@ -79,7 +79,7 @@ Figures regenerate exactly from `data/`. A new benchmark run does not reproduce 
 - `T_db_ms`: database execution time. `T_total_ms`: wall time of the interaction.
 - `T_teardown_ms`: time from the last parse span to the end of the interaction; present for dbhub on PostgreSQL and anthropic-pg. Where it is empty, that time is part of `epsilon_ms`.
 - `epsilon_ms`: residual, `T_total - T_db - phases - T_teardown`.
-- `PTax_ms`: sum of the six phase times. `PTR`: `PTax_ms / T_db_ms`. The figures use the teardown-inclusive ratio `(T_total - T_db) / T_db`.
+- `PTax_ms`: Protocol Tax, `T_total_ms - T_db_ms` (every phase, teardown and residual included). `PTR`: `PTax_ms / T_db_ms`.
 - `B_mcp`, `tau_disc`, `n_life`, `R_retry_ms`, `M_peak_mb`: bytes on the MCP wire, discovery tokens, lifecycle handshakes, retry time, peak server memory (MiB). `phi`, `gamma`, `S_ser`, `rho`, `T_pool_ms` are not measured in Track A and are empty.
 
 `data/track_b/corpus.csv`, one row per Track B attempt (7,200 rows: 4 models x 6 couplings x 2 scale factors x 50 questions x 3 reps):

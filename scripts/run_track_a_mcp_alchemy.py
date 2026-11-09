@@ -236,7 +236,7 @@ def write_csv_readme(path: Path) -> None:
         "- T_total_ms: wall-clock interaction time.\n"
         "- T_teardown_ms: interval from the last parse span to the end of the interaction.\n"
         "- epsilon_ms: residual (T_total - T_db - sum of the named phases).\n"
-        "- PTax_ms: protocol tax = T_disc + T_life + T_hand + T_ser + T_parse + T_xport.\n"
+        "- PTax_ms: protocol tax = T_total - T_db (all phases, teardown and residual).\n"
         "- PTR: PTax_ms / T_db_ms (empty when T_db <= 0).\n"
         "- B_mcp: bytes received over MCP wire.\n"
         "- tau_disc: discovery token count.\n"
