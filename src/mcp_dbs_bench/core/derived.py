@@ -1,6 +1,6 @@
 """Derived quantities computed from the 8-term decomposition:
 
-    - PTax    : sum of six phase durations
+    - PTax    : T_total - T_db (all phases, teardown and residual)
     - PTR     : PTax / T_db
     - rho     : B_mcp / B_native
     - phi     : (tau_disc + tau_result + tau_boiler) / tau*_result
@@ -16,17 +16,13 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 
-def protocol_tax_ms(
-    *,
-    t_disc_ms: float,
-    t_life_ms: float,
-    t_hand_ms: float,
-    t_ser_ms: float,
-    t_parse_ms: float,
-    t_xport_excl_ms: float,
-) -> float:
-    """PTax = T_disc + T_life + T_hand + T_ser + T_parse + T_xport_excl."""
-    return t_disc_ms + t_life_ms + t_hand_ms + t_ser_ms + t_parse_ms + t_xport_excl_ms
+def protocol_tax_ms(*, t_total_ms: float, t_db_ms: float) -> float:
+    """PTax = T_total - T_db.
+
+    Everything outside database execution counts as Protocol Tax: every
+    phase, teardown, and the residual the spans do not cover.
+    """
+    return t_total_ms - t_db_ms
 
 
 def protocol_tax_ratio(*, ptax_ms: float, t_db_ms: float) -> float:

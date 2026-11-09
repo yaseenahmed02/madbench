@@ -22,6 +22,7 @@ from pathlib import Path
 
 from mcp_dbs_bench.core.clock import ns_to_ms
 from mcp_dbs_bench.core.derived import (
+    protocol_tax_ms,
     protocol_tax_ratio,
     serialization_throughput_rows_per_ms,
 )
@@ -196,9 +197,7 @@ def _project_to_metrics(
         + t_ser_ms + t_parse_ms + t_xport_excl_ms + t_teardown_ms
     )
     t_hand_ms = t_hand_excl_ms
-    # Protocol Tax is everything outside database execution, so teardown and
-    # the residual count as tax: PTax = T_total - T_db.
-    ptax = t_total_ms - t_db_ms
+    ptax = protocol_tax_ms(t_total_ms=t_total_ms, t_db_ms=t_db_ms)
     ptr_value = (
         protocol_tax_ratio(ptax_ms=ptax, t_db_ms=t_db_ms) if t_db_ms > 0 else None
     )

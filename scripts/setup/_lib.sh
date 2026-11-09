@@ -7,7 +7,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
-# ---- Pinned versions (the versions the published results were measured with) ----
+# ---- Pinned versions (the versions used for the published results; Track A dbhub on PostgreSQL used dbhub 0.21.2) ----
 PYTHON_VERSION="${PYTHON_VERSION:-3.11}"
 UV_VERSION="${UV_VERSION:-0.5.10}"
 NODE_VERSION="${NODE_VERSION:-22}"

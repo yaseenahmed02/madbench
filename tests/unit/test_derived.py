@@ -15,17 +15,10 @@ from mcp_dbs_bench.core.derived import (
 )
 
 
-def test_protocol_tax_sums_six_phase_terms():
-    # PTax = T_disc + T_life + T_hand + T_ser + T_parse + T_xport_excl
-    result = protocol_tax_ms(
-        t_disc_ms=1.0,
-        t_life_ms=2.0,
-        t_hand_ms=3.0,
-        t_ser_ms=4.0,
-        t_parse_ms=5.0,
-        t_xport_excl_ms=6.0,
-    )
-    assert result == 21.0
+def test_protocol_tax_is_total_minus_db_time():
+    # Teardown and residual count as tax, so PTax = T_total - T_db.
+    result = protocol_tax_ms(t_total_ms=5_120.0, t_db_ms=100.0)
+    assert result == 5_020.0
 
 
 def test_protocol_tax_ratio_divides_ptax_by_tdb():

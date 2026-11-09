@@ -57,6 +57,10 @@ log "Smoke test: connect to PostgreSQL inside the container..."
 docker exec "${PG_CONTAINER}" psql -U bench -d tpch -c "SELECT 1 AS ok;" >/dev/null
 ok "PostgreSQL on :55432 is accepting connections."
 
+# Track B caps every SQL statement at 10 minutes so a runaway agent query cannot stall a run.
+docker exec "${PG_CONTAINER}" psql -U bench -d tpch -c "ALTER ROLE bench SET statement_timeout = '10min';" >/dev/null
+ok "PostgreSQL statement_timeout for role bench set to 10min."
+
 if have_cmd mysql; then
   log "Smoke test: mysql connect to localhost:53306..."
   mysql -h 127.0.0.1 -P 53306 -ubench -pbench -e "SELECT 1 AS ok;" tpch 2>/dev/null >/dev/null

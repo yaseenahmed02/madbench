@@ -85,7 +85,7 @@ def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--query-file", nargs="+", default=[str(DEFAULT_QUERY_FILE)],
-        help="one or more workload YAMLs (e.g. the c2/c5 and c4/c6 files)",
+        help="one or more workload YAMLs (e.g. workloads/track_b/questions.yaml)",
     )
     parser.add_argument("--backends", default="postgres,mysql,duckdb")
     parser.add_argument("--sf", type=int, default=1)

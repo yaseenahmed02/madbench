@@ -5,13 +5,13 @@ MADBench measures the overhead that Model Context Protocol (MCP) database server
 ## Requirements
 
 - Linux or macOS. Disk: about 100 GB for TPC-H SF1, SF3 and SF10 across all databases, about 7 GB for SF1 alone.
-- Docker with the compose plugin (PostgreSQL 16.14 and MySQL 8.4.9 images).
+- Docker with the compose plugin (PostgreSQL 16.14 and MySQL 8.4.10 images).
 - git, make and a C compiler (to build TPC-H dbgen).
 - Python 3.11 (installed through uv by the setup scripts).
 - Node.js 22 (installed through nvm by the setup scripts if missing).
 - Track B only: an OpenRouter API key in `OPENROUTER_API_KEY`.
 
-Pinned versions: mcp-alchemy 2025.8.15.91819, @bytebase/dbhub 0.22.6, @modelcontextprotocol/server-postgres 0.6.2 (set in `scripts/setup/_lib.sh`). Python dependencies are locked in `uv.lock`.
+Pinned versions: mcp-alchemy 2025.8.15.91819, @bytebase/dbhub 0.22.6, @modelcontextprotocol/server-postgres 0.6.2 (set in `scripts/setup/_lib.sh`). The published Track A dbhub cells on PostgreSQL ran dbhub 0.21.2; everything else ran these versions. Python dependencies are locked in `uv.lock`.
 
 ## Setup
 
@@ -41,7 +41,7 @@ One script per server. Each runs its full matrix by default (5 queries x 3 scale
 .venv/bin/python scripts/run_track_a_anthropic_pg.py    # PostgreSQL
 ```
 
-Use `--backends`, `--queries`, `--sfs`, `--reps`, `--cold-warm` to run a subset. A warm cell reuses one server process and connection for all reps; a cold cell starts a new server process and connection for every rep. Output goes to `results/track_a/<server>/`: raw traces, `csv/per_trace_metrics.csv` and per-cell summaries.
+Use `--backends`, `--queries`, `--sfs`, `--reps`, `--cold-warm` to run a subset. Every interaction starts and stops the server process. A warm cell runs 5 warmups and reuses the harness's native database connection across reps; a cold cell opens a fresh native connection and harness adapter for every rep. Output goes to `results/track_a/<server>/`: raw traces, `csv/per_trace_metrics.csv` and per-cell summaries.
 
 ## Track B
 
@@ -54,7 +54,9 @@ bash scripts/track_b/run_track_b.sh
 .venv/bin/python scripts/track_b/build_corpus.py --output results/track_b/corpus.csv results/track_b/rescored.csv
 ```
 
-`run_track_b.sh` runs every model x coupling x scale factor with 3 reps of every question, and resumes where it stopped. Override with `MODELS`, `SFS`, `REPS`, `QUERY_IDS`, `ONLY_COUPLING=server:backend` and `BUDGET_USD`. The default models are `deepseek/deepseek-v4-flash`, `z-ai/glm-5.3-flash`, `openai/gpt-6-luna` and `anthropic/claude-haiku-5.5`. The agent system prompt is `SYSTEM_PROMPT` in `scripts/track_b/_attempt.py`; agents may make at most 10 tool calls per question. dbhub on PostgreSQL logs in as a role that can read only the schema of the scale factor under test (`DBHUB_SEARCH_PATH_CONFIG=1`, the default in `run_track_b.sh`).
+`run_track_b.sh` runs every model x coupling x scale factor with 3 reps of every question, and resumes where it stopped. Override with `MODELS`, `SFS`, `REPS`, `QUERY_IDS`, `ONLY_COUPLING=server:backend` and `BUDGET_USD`. The default models are `deepseek/deepseek-v4-flash`, `z-ai/glm-5.3-flash`, `openai/gpt-6-luna` and `anthropic/claude-haiku-5.5`. The agent system prompt is `SYSTEM_PROMPT` in `scripts/track_b/_attempt.py`; agents may make at most 10 tool calls per question. dbhub on PostgreSQL logs in as a role that can read only the schema of the scale factor under test (`DBHUB_SEARCH_PATH_CONFIG=1`, the default in `run_track_b.sh`). Every SQL statement on PostgreSQL and MySQL is capped at 10 minutes (set by `scripts/setup/05_start_databases.sh` and `docker-compose.yml`). The client sends temperature 0 to every model; providers that do not support it use their default sampling.
+
+The published corpus keeps one result per attempt (model, coupling, scale factor, question, repetition). Attempts that ended in a blank DeepSeek reply were run again and the rerun kept, and dbhub on PostgreSQL is taken from runs with the scale-factor-scoped login. `build_corpus.py` keeps the last result for each attempt, so place reruns after the runs they replace.
 
 ## Figures
 
@@ -64,7 +66,7 @@ The four scripts in `figures/` rebuild every published figure from `data/`:
 make figures
 ```
 
-With the pinned pandas and matplotlib versions in the `Makefile`, the PDFs are byte-identical on every run. Each script also prints the numbers it plots.
+With the pinned pandas and matplotlib versions in the `Makefile`, the PDFs are deterministic across runs. Each script also prints the numbers it plots.
 
 ## Reproducibility
 

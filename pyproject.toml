@@ -47,7 +47,7 @@ mysql    = "mcp_dbs_bench.backends.mysql:MySQLBackend"
 duckdb   = "mcp_dbs_bench.backends.duckdb:DuckDBBackend"
 
 [tool.uv]
-# Resolve to the package versions the published results were measured with.
+# Resolve to the package versions used for the published results.
 constraint-dependencies = [
   "annotated-doc==0.0.4",
   "annotated-types==0.7.0",

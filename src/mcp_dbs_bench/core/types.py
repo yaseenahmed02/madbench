@@ -14,7 +14,7 @@ from typing import Any
 
 
 class OutputFormat(str, Enum):
-    """Self-declared output format. Used to compute IM-1 (phi)
+    """Self-declared output format. Used to compute the token inflation factor (phi)
     and CM-2 (rho) without parsing semantics the harness does not control."""
 
     JSON_PER_ROW = "json_per_row"
@@ -89,7 +89,7 @@ class ToolCallResponse:
     """Inbound tool/call result: materialized rows plus the raw payload bytes.
 
     `raw_bytes` is what arrived on the wire; the metric layer uses it to
-    compute IM-2 (B_mcp), IM-3 inputs, and tokenization (IM-1, IM-9, IM-8).
+    compute payload size (B_mcp), serialization inputs and token counts.
     `rows` is the parsed view used to compute `tau*_result`.
     """
 

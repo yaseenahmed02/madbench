@@ -66,14 +66,7 @@ class InteractionResult:
     @property
     def ptax_ms(self) -> float:
         d = self.decomposition
-        return protocol_tax_ms(
-            t_disc_ms=d.t_disc_ms,
-            t_life_ms=d.t_life_ms,
-            t_hand_ms=d.t_hand_ms,
-            t_ser_ms=d.t_ser_ms,
-            t_parse_ms=d.t_parse_ms,
-            t_xport_excl_ms=d.t_xport_excl_ms,
-        )
+        return protocol_tax_ms(t_total_ms=d.t_total_ms, t_db_ms=d.t_db_ms)
 
     @property
     def ptr(self) -> float | None:
