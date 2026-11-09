@@ -1,0 +1,7 @@
+.venv/
+.cache/
+__pycache__/
+*.pyc
+results/
+figures/*.pdf
+workloads/track_b/gold_results_sf*/

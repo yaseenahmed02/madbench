@@ -1,0 +1,111 @@
+[build-system]
+requires = ["hatchling>=1.21"]
+build-backend = "hatchling.build"
+
+[project]
+name = "madbench"
+version = "1.0.0"
+description = "Benchmark for the protocol overhead of MCP database servers."
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+dependencies = [
+  "duckdb>=1.0",
+  "httpx>=0.27",
+  "matplotlib>=3.8",
+  "mcp>=1.0",
+  "numpy>=1.26",
+  "opentelemetry-api>=1.27",
+  "opentelemetry-sdk>=1.27",
+  "psutil>=5.9",
+  "psycopg[binary]>=3.1",
+  "pymysql>=1.1",
+  "cryptography>=42",
+  "pyyaml>=6.0",
+  # Track B DuckDB cells run mcp-alchemy in this environment through
+  # scripts/track_b/mcp_alchemy_shim.py. duckdb-engine's dialect extends the
+  # psycopg2 PostgreSQL dialect, so it needs psycopg2 importable.
+  "mcp-alchemy==2025.8.15.91819",
+  "duckdb-engine>=0.17",
+  "psycopg2-binary>=2.9",
+]
+
+[project.optional-dependencies]
+figures = ["pandas>=2.0", "matplotlib>=3.8"]
+dev = ["pytest>=8", "pytest-asyncio>=0.23", "ruff>=0.5"]
+
+[project.entry-points."mcp_dbs_bench.servers"]
+anthropic-pg = "mcp_dbs_bench.servers.anthropic_pg:AnthropicPgPlugin"
+mcp-alchemy  = "mcp_dbs_bench.servers.mcp_alchemy:McpAlchemyPlugin"
+dbhub        = "mcp_dbs_bench.servers.dbhub:DBHubPlugin"
+direct       = "mcp_dbs_bench.servers.direct:DirectDBPlugin"
+
+[project.entry-points."mcp_dbs_bench.backends"]
+postgres = "mcp_dbs_bench.backends.postgres:PostgresBackend"
+mysql    = "mcp_dbs_bench.backends.mysql:MySQLBackend"
+duckdb   = "mcp_dbs_bench.backends.duckdb:DuckDBBackend"
+
+[tool.uv]
+# Resolve to the package versions the published results were measured with.
+constraint-dependencies = [
+  "annotated-doc==0.0.4",
+  "annotated-types==0.7.0",
+  "anyio==4.13.0",
+  "certifi==2026.5.20",
+  "cffi==2.0.0",
+  "click==8.4.1",
+  "contourpy==1.3.3",
+  "cryptography==48.0.0",
+  "duckdb==1.5.3",
+  "fonttools==4.63.0",
+  "idna==3.16",
+  "iniconfig==2.3.0",
+  "kiwisolver==1.5.0",
+  "matplotlib==3.10.9",
+  "mcp==1.27.1",
+  "numpy==2.4.6",
+  "opentelemetry-api==1.42.1",
+  "opentelemetry-sdk==1.42.1",
+  "opentelemetry-semantic-conventions==0.63b1",
+  "packaging==26.2",
+  "pandas==3.0.3",
+  "pillow==12.2.0",
+  "pluggy==1.6.0",
+  "psycopg-binary==3.3.4",
+  "psycopg==3.3.4",
+  "pycparser==3.0",
+  "pydantic-core==2.46.4",
+  "pydantic==2.13.4",
+  "pygments==2.20.0",
+  "pyjwt==2.13.0",
+  "pymysql==1.2.0",
+  "pyparsing==3.3.2",
+  "pytest-asyncio==1.3.0",
+  "pytest==9.0.3",
+  "python-dateutil==2.9.0.post0",
+  "python-dotenv==1.2.2",
+  "python-multipart==0.0.29",
+  "pywin32==311",
+  "rpds-py==0.30.0",
+  "ruff==0.15.14",
+  "sqlalchemy==2.0.50",
+  "sse-starlette==3.4.4",
+  "starlette==1.1.0",
+  "typer==0.25.1",
+  "typing-extensions==4.15.0",
+  "typing-inspection==0.4.2",
+  "tzdata==2026.2",
+  "uvicorn==0.48.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mcp_dbs_bench"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"

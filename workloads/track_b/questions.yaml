@@ -1,0 +1,507 @@
+# MADBench Track B questions over the TPC-H schema
+# (nation, region, supplier, customer, part, partsupp, orders, lineitem).
+# Top-level keys c2, c4, c5, c6 are SQLyzr complexity levels. Each entry has an
+# id, a target SQLyzr sub-category, the natural-language question, and the gold
+# SQL whose result the agent's answer is scored against. Gold SQL contains
+# ORDER BY only where the question states the output order (the verifier scores
+# row order whenever ORDER BY appears).
+
+schema: tpch
+scale_factor_default: 1
+
+# ============================================================
+# C2 — one simple construct beyond projection
+# Target sub-categories: s3 (ORDER BY), s4 (single WHERE), s6 (scalar agg),
+#   s7 (LIMIT), s8 (DISTINCT), s9 (unconditional GROUP BY), s10 (single equi-join)
+# ============================================================
+c2:
+  - id: tb_c2_01
+    target_subcat: s6
+    question: "How many customer records are in the database?"
+    gold_sql: |
+      SELECT COUNT(*) FROM customer
+
+  - id: tb_c2_02
+    target_subcat: s6
+    question: "What is the total value of all orders in the database (sum of o_totalprice)?"
+    gold_sql: |
+      SELECT SUM(o_totalprice) FROM orders
+
+  - id: tb_c2_03
+    target_subcat: s6
+    question: "What is the average retail price of parts?"
+    gold_sql: |
+      SELECT AVG(p_retailprice) FROM part
+
+  - id: tb_c2_04
+    target_subcat: s6
+    question: "What is the minimum account balance among all suppliers?"
+    gold_sql: |
+      SELECT MIN(s_acctbal) FROM supplier
+
+  - id: tb_c2_05
+    target_subcat: s6
+    question: "What is the maximum quantity value in any line item?"
+    gold_sql: |
+      SELECT MAX(l_quantity) FROM lineitem
+
+  - id: tb_c2_06
+    target_subcat: s7
+    question: "Show 10 customer names from the customer table (any 10)."
+    gold_sql: |
+      SELECT c_name FROM customer LIMIT 10
+
+  - id: tb_c2_07
+    target_subcat: s8
+    question: "List all distinct order statuses that appear in the orders table."
+    gold_sql: |
+      SELECT DISTINCT o_orderstatus FROM orders
+
+  - id: tb_c2_08
+    target_subcat: s8
+    question: "List all distinct part manufacturers."
+    gold_sql: |
+      SELECT DISTINCT p_mfgr FROM part
+
+  - id: tb_c2_09
+    target_subcat: s3
+    question: "List all nation names sorted alphabetically."
+    gold_sql: |
+      SELECT n_name FROM nation ORDER BY n_name
+
+  - id: tb_c2_10
+    target_subcat: s4
+    question: "Show the names of all customers whose account balance is negative."
+    gold_sql: |
+      SELECT c_name FROM customer WHERE c_acctbal < 0
+
+  - id: tb_c2_11
+    target_subcat: s4
+    question: "What is the name of the customer whose customer key is 100?"
+    gold_sql: |
+      SELECT c_name FROM customer WHERE c_custkey = 100
+
+  - id: tb_c2_12
+    target_subcat: s4
+    question: "List the names of suppliers based in nation with n_nationkey = 5."
+    gold_sql: |
+      SELECT s_name FROM supplier WHERE s_nationkey = 5
+
+  - id: tb_c2_13
+    target_subcat: s9
+    question: "For each order priority, how many orders have that priority?"
+    gold_sql: |
+      SELECT o_orderpriority, COUNT(*) FROM orders GROUP BY o_orderpriority
+
+  - id: tb_c2_14
+    target_subcat: s9
+    question: "For each market segment, how many customers belong to that segment?"
+    gold_sql: |
+      SELECT c_mktsegment, COUNT(*) FROM customer GROUP BY c_mktsegment
+
+  - id: tb_c2_15
+    target_subcat: s10
+    question: "For each customer, show the customer name alongside their nation name."
+    gold_sql: |
+      SELECT c_name, n_name FROM customer, nation WHERE c_nationkey = n_nationkey
+
+# ============================================================
+# C4 — one level of subquery nesting, UNION, or joins of three or more tables
+# ============================================================
+c4:
+- id: tb_c4_01
+  target_subcat: s20
+  question: List the names (n_name) of nations that have at least one supplier with an account balance
+    strictly greater than 9,990. Return each nation name once.
+  gold_sql: |
+    SELECT n_name
+    FROM nation
+    WHERE EXISTS (
+      SELECT 1 FROM supplier
+      WHERE s_nationkey = n_nationkey AND s_acctbal > 9990
+    )
+- id: tb_c4_02
+  target_subcat: s21
+  question: Produce one combined list of the names of all customers and all suppliers whose account balance
+    is strictly greater than 9,999. Return only the name column, with each name listed once.
+  gold_sql: |
+    SELECT c_name AS name FROM customer WHERE c_acctbal > 9999
+    UNION
+    SELECT s_name AS name FROM supplier WHERE s_acctbal > 9999
+- id: tb_c4_03
+  target_subcat: s22
+  question: List the names (c_name) of customers who have placed at least one order with a total price
+    (o_totalprice) strictly greater than 500,000. Return each customer name once.
+  gold_sql: |
+    SELECT c_name
+    FROM customer
+    WHERE c_custkey IN (SELECT o_custkey FROM orders WHERE o_totalprice > 500000)
+- id: tb_c4_04
+  target_subcat: s23
+  question: List the name (s_name) and account balance (s_acctbal) of every supplier located in the nation
+    named KENYA whose account balance is strictly greater than 9,500.
+  gold_sql: |
+    SELECT s_name, s_acctbal
+    FROM supplier
+    INNER JOIN nation ON s_nationkey = n_nationkey
+    WHERE n_name = 'KENYA' AND s_acctbal > 9500
+- id: tb_c4_05
+  target_subcat: s24
+  question: List the order key, order date and total price of every order placed by the customer named
+    'Customer#000000010', sorted by order date (earliest first) and then by order key.
+  gold_sql: |
+    SELECT o_orderkey, o_orderdate, o_totalprice
+    FROM orders
+    INNER JOIN customer ON o_custkey = c_custkey
+    WHERE c_name = 'Customer#000000010'
+    ORDER BY o_orderdate, o_orderkey
+- id: tb_c4_06
+  target_subcat: s24
+  question: For the part with p_partkey = 500, list the name (s_name) of each supplier that supplies it
+    together with that supplier's supply cost (ps_supplycost) for the part, cheapest first, breaking ties
+    by supplier name.
+  gold_sql: |
+    SELECT s_name, ps_supplycost
+    FROM partsupp
+    INNER JOIN supplier ON ps_suppkey = s_suppkey
+    WHERE ps_partkey = 500
+    ORDER BY ps_supplycost, s_name
+- id: tb_c4_07
+  target_subcat: s25
+  question: Which part types (p_type) does the supplier with supplier key 77 (s_suppkey = 77) supply?
+    List each part type once.
+  gold_sql: |
+    SELECT p_type
+    FROM partsupp
+    INNER JOIN part ON ps_partkey = p_partkey
+    WHERE ps_suppkey = 77
+    GROUP BY p_type
+- id: tb_c4_08
+  target_subcat: s26
+  question: For each nation, how many suppliers located in that nation have an account balance strictly
+    less than -985? Return the nation name (n_name) and the count, one row per nation that has at least
+    one such supplier.
+  gold_sql: |
+    SELECT n_name, COUNT(*) AS low_balance_suppliers
+    FROM supplier
+    INNER JOIN nation ON s_nationkey = n_nationkey
+    WHERE s_acctbal < -985
+    GROUP BY n_name
+- id: tb_c4_09
+  target_subcat: s26
+  question: What is the average supply cost (ps_supplycost) across all partsupp rows for parts of brand
+    'Brand#23'? Return a single number.
+  gold_sql: |
+    SELECT AVG(ps_supplycost)
+    FROM partsupp
+    INNER JOIN part ON ps_partkey = p_partkey
+    WHERE p_brand = 'Brand#23'
+- id: tb_c4_10
+  target_subcat: s27
+  question: For each region, how many orders were placed during calendar year 1997 (order date from 1997-01-01
+    through 1997-12-31 inclusive) by customers located in that region? Return the region name (r_name)
+    and the order count, one row per region.
+  gold_sql: |
+    SELECT r_name, COUNT(*) AS order_count
+    FROM orders
+    JOIN customer ON o_custkey = c_custkey
+    JOIN nation ON c_nationkey = n_nationkey
+    JOIN region ON n_regionkey = r_regionkey
+    WHERE o_orderdate >= CAST('1997-01-01' AS DATE)
+      AND o_orderdate < CAST('1998-01-01' AS DATE)
+    GROUP BY r_name
+
+# ============================================================
+# C5 — deeper nesting or CASE expressions
+# Target sub-categories: s28 (nesting + GROUP BY), s29 (nesting + join),
+#   s30 (nesting + aggregate), s31 (two levels of nesting), s32 (CASE)
+# ============================================================
+c5:
+  - id: tb_c5_01
+    target_subcat: s28
+    question: "For each nation (by n_nationkey), count how many customers have an account balance above the overall average customer balance."
+    gold_sql: |
+      SELECT c_nationkey, COUNT(*)
+      FROM customer
+      WHERE c_acctbal > (SELECT AVG(c_acctbal) FROM customer)
+      GROUP BY c_nationkey
+
+  - id: tb_c5_02
+    target_subcat: s28
+    question: "For each order priority, count orders whose total price exceeds the overall average order price."
+    gold_sql: |
+      SELECT o_orderpriority, COUNT(*)
+      FROM orders
+      WHERE o_totalprice > (SELECT AVG(o_totalprice) FROM orders)
+      GROUP BY o_orderpriority
+
+  - id: tb_c5_03
+    target_subcat: s28
+    question: "For each part manufacturer, count parts whose retail price is above the overall average retail price."
+    gold_sql: |
+      SELECT p_mfgr, COUNT(*)
+      FROM part
+      WHERE p_retailprice > (SELECT AVG(p_retailprice) FROM part)
+      GROUP BY p_mfgr
+
+  - id: tb_c5_04
+    target_subcat: s29
+    question: "List distinct customer names whose orders exceed the overall average order value."
+    gold_sql: |
+      SELECT DISTINCT c_name
+      FROM customer, orders
+      WHERE c_custkey = o_custkey
+        AND o_totalprice > (SELECT AVG(o_totalprice) FROM orders)
+
+  - id: tb_c5_05
+    target_subcat: s29
+    question: "List distinct supplier names who supply at least one part whose supply cost is above the overall average supply cost."
+    gold_sql: |
+      SELECT DISTINCT s_name
+      FROM supplier, partsupp
+      WHERE s_suppkey = ps_suppkey
+        AND ps_supplycost > (SELECT AVG(ps_supplycost) FROM partsupp)
+
+  - id: tb_c5_06
+    target_subcat: s30
+    question: "What is the total revenue (sum of o_totalprice) from orders placed by customers whose account balance exceeds the overall average customer balance?"
+    gold_sql: |
+      SELECT SUM(o_totalprice)
+      FROM orders
+      WHERE o_custkey IN (SELECT c_custkey FROM customer WHERE c_acctbal > (SELECT AVG(c_acctbal) FROM customer))
+
+  - id: tb_c5_07
+    target_subcat: s30
+    question: "How many parts have retail price higher than the average retail price of parts made by manufacturer 'Manufacturer#1'?"
+    gold_sql: |
+      SELECT COUNT(*)
+      FROM part
+      WHERE p_retailprice > (SELECT AVG(p_retailprice) FROM part WHERE p_mfgr = 'Manufacturer#1')
+
+  - id: tb_c5_08
+    target_subcat: s30
+    question: "What is the average retail price of parts supplied by supplier with s_suppkey = 100?"
+    gold_sql: |
+      SELECT AVG(p_retailprice)
+      FROM part
+      WHERE p_partkey IN (SELECT ps_partkey FROM partsupp WHERE ps_suppkey = 100)
+
+  - id: tb_c5_09
+    target_subcat: s31
+    question: "List distinct customer names whose orders have total price exceeding the overall average order total price."
+    gold_sql: |
+      SELECT DISTINCT c_name
+      FROM customer
+      WHERE c_custkey IN (
+        SELECT o_custkey FROM orders WHERE o_totalprice > (
+          SELECT AVG(o_totalprice) FROM orders
+        )
+      )
+
+  - id: tb_c5_10
+    target_subcat: s31
+    question: "List distinct customer names who placed orders with total price greater than the average total price among orders placed by customers in nation 5."
+    gold_sql: |
+      SELECT DISTINCT c_name
+      FROM customer, orders
+      WHERE c_custkey = o_custkey
+        AND o_totalprice > (
+          SELECT AVG(o_totalprice) FROM orders WHERE o_custkey IN (
+            SELECT c_custkey FROM customer WHERE c_nationkey = 5
+          )
+        )
+
+  - id: tb_c5_11
+    target_subcat: s32
+    question: "For each customer, show their name and label them 'high' if their account balance is greater than 5000, otherwise 'low'."
+    gold_sql: |
+      SELECT c_name, CASE WHEN c_acctbal > 5000 THEN 'high' ELSE 'low' END AS tier FROM customer
+
+  - id: tb_c5_12
+    target_subcat: s32
+    question: "For each part, show its name and label its price tier: 'premium' if retail price > 2000, 'standard' if 500-2000, else 'budget'."
+    gold_sql: |
+      SELECT p_name,
+        CASE
+          WHEN p_retailprice > 2000 THEN 'premium'
+          WHEN p_retailprice >= 500 THEN 'standard'
+          ELSE 'budget'
+        END AS tier
+      FROM part
+
+  - id: tb_c5_13
+    target_subcat: s32
+    question: "Count how many customers are high-balance (c_acctbal > 5000) and how many are low-balance (c_acctbal <= 5000), returning both counts in one row."
+    gold_sql: |
+      SELECT
+        SUM(CASE WHEN c_acctbal > 5000 THEN 1 ELSE 0 END) AS high_balance,
+        SUM(CASE WHEN c_acctbal <= 5000 THEN 1 ELSE 0 END) AS low_balance
+      FROM customer
+
+  - id: tb_c5_14
+    target_subcat: s32
+    question: "For each nation (by n_nationkey), compute total account balance of customers, but only counting balances above 3000 (else count as 0)."
+    gold_sql: |
+      SELECT c_nationkey,
+        SUM(CASE WHEN c_acctbal > 3000 THEN c_acctbal ELSE 0 END) AS eligible_balance
+      FROM customer
+      GROUP BY c_nationkey
+
+  - id: tb_c5_15
+    target_subcat: s31
+    question: "List distinct order priorities of orders placed by customers whose account balance is above the average balance of customers in nation 5."
+    gold_sql: |
+      SELECT DISTINCT o_orderpriority
+      FROM orders
+      WHERE o_custkey IN (
+        SELECT c_custkey FROM customer WHERE c_acctbal > (
+          SELECT AVG(c_acctbal) FROM customer WHERE c_nationkey = 5
+        )
+      )
+
+# ============================================================
+# C6 — compound constructs: deep nesting, CTEs, window functions
+# ============================================================
+c6:
+- id: tb_c6_01
+  target_subcat: s33
+  question: Which nations are home to either a customer who has the highest customer account balance or
+    a supplier who has the highest supplier account balance? Consider all customers and suppliers tied
+    for the maximum, and return each such nation key (n_nationkey) once.
+  gold_sql: |
+    SELECT c_nationkey FROM customer
+    WHERE c_acctbal = (SELECT MAX(c_acctbal) FROM customer)
+    UNION
+    SELECT s_nationkey FROM supplier
+    WHERE s_acctbal = (SELECT MAX(s_acctbal) FROM supplier)
+- id: tb_c6_02
+  target_subcat: s33
+  question: How many customers have an account balance above the average customer account balance, and
+    how many suppliers have an account balance above the average supplier account balance? Return two
+    rows, each with a label ('customer' or 'supplier') and the count.
+  gold_sql: |
+    SELECT 'customer' AS party, COUNT(*) AS above_average
+    FROM customer
+    WHERE c_acctbal > (SELECT AVG(c_acctbal) FROM customer)
+    UNION ALL
+    SELECT 'supplier' AS party, COUNT(*) AS above_average
+    FROM supplier
+    WHERE s_acctbal > (SELECT AVG(s_acctbal) FROM supplier)
+- id: tb_c6_03
+  target_subcat: s34
+  question: How many orders have a total price above the average total price of orders placed by customers
+    whose account balance is above the average customer account balance?
+  gold_sql: |
+    SELECT COUNT(*)
+    FROM orders
+    WHERE o_totalprice > (
+      SELECT AVG(o_totalprice) FROM orders WHERE o_custkey IN (
+        SELECT c_custkey FROM customer WHERE c_acctbal > (
+          SELECT AVG(c_acctbal) FROM customer
+        )
+      )
+    )
+- id: tb_c6_04
+  target_subcat: s34
+  question: How many suppliers have an account balance above the average account balance of the suppliers
+    who supply at least one part of brand 'Brand#23' in container 'SM CASE'?
+  gold_sql: |
+    SELECT COUNT(*)
+    FROM supplier
+    WHERE s_acctbal > (
+      SELECT AVG(s_acctbal) FROM supplier WHERE s_suppkey IN (
+        SELECT ps_suppkey FROM partsupp WHERE ps_partkey IN (
+          SELECT p_partkey FROM part WHERE p_brand = 'Brand#23' AND p_container = 'SM CASE'
+        )
+      )
+    )
+- id: tb_c6_05
+  target_subcat: s35
+  question: Compute the total supplier account balance for each nation. List the nations (n_name) whose
+    total exceeds the average of these per-nation totals, together with their total.
+  gold_sql: |
+    WITH nation_totals AS (
+      SELECT s_nationkey, SUM(s_acctbal) AS total_balance
+      FROM supplier
+      GROUP BY s_nationkey
+    )
+    SELECT n_name, total_balance
+    FROM nation_totals, nation
+    WHERE s_nationkey = n_nationkey
+      AND total_balance > (SELECT AVG(total_balance) FROM nation_totals)
+- id: tb_c6_06
+  target_subcat: s35
+  question: Which customer or customers have placed the largest number of orders? Return the customer
+    key, customer name, and number of orders, including every customer tied for the maximum.
+  gold_sql: |
+    WITH order_counts AS (
+      SELECT o_custkey, COUNT(*) AS order_count
+      FROM orders
+      GROUP BY o_custkey
+    )
+    SELECT c_custkey, c_name, order_count
+    FROM order_counts, customer
+    WHERE o_custkey = c_custkey
+      AND order_count = (SELECT MAX(order_count) FROM order_counts)
+- id: tb_c6_07
+  target_subcat: s36
+  question: Within each region, rank its nations by the total account balance of the customers in that
+    nation, highest first, where nations with equal totals share a rank and the next rank is skipped.
+    Return the region name, nation name, total customer account balance, and rank for every nation ranked
+    3 or better in its region. List the rows ordered by region name, then rank, then nation name.
+  gold_sql: |
+    SELECT r_name, n_name, total_balance, balance_rank
+    FROM (
+      SELECT r_name, n_name, SUM(c_acctbal) AS total_balance,
+        RANK() OVER (PARTITION BY r_name ORDER BY SUM(c_acctbal) DESC) AS balance_rank
+      FROM customer, nation, region
+      WHERE c_nationkey = n_nationkey AND n_regionkey = r_regionkey
+      GROUP BY r_name, n_name
+    ) AS ranked
+    WHERE balance_rank <= 3
+    ORDER BY r_name, balance_rank, n_name
+- id: tb_c6_08
+  target_subcat: s36
+  question: For orders placed in January 1995 (o_orderdate from 1995-01-01 to 1995-01-31 inclusive), show
+    each order date, the total o_totalprice of the orders placed on that date, and the running total of
+    those daily totals from 1995-01-01 up to and including that date. List the dates in order, earliest
+    first.
+  gold_sql: |
+    SELECT o_orderdate, daily_total,
+      SUM(daily_total) OVER (ORDER BY o_orderdate) AS running_total
+    FROM (
+      SELECT o_orderdate, SUM(o_totalprice) AS daily_total
+      FROM orders
+      WHERE o_orderdate >= CAST('1995-01-01' AS DATE) AND o_orderdate <= CAST('1995-01-31' AS DATE)
+      GROUP BY o_orderdate
+    ) AS daily
+    ORDER BY o_orderdate
+- id: tb_c6_09
+  target_subcat: s36
+  question: For each ship date from 1997-06-01 to 1997-06-14 inclusive (l_shipdate), show the date, the
+    number of line items shipped on that date, and the change from the previous date's count (that date's
+    count minus the previous date's count; NULL for 1997-06-01). List the dates in order, earliest first.
+  gold_sql: |
+    SELECT l_shipdate, shipped_count,
+      shipped_count - LAG(shipped_count) OVER (ORDER BY l_shipdate) AS change_from_previous
+    FROM (
+      SELECT l_shipdate, COUNT(*) AS shipped_count
+      FROM lineitem
+      WHERE l_shipdate >= CAST('1997-06-01' AS DATE) AND l_shipdate <= CAST('1997-06-14' AS DATE)
+      GROUP BY l_shipdate
+    ) AS daily
+    ORDER BY l_shipdate
+- id: tb_c6_10
+  target_subcat: s36
+  question: For each market segment, which customer has the highest account balance in that segment? Return
+    the market segment, customer key, customer name, and account balance, including every customer tied
+    for the highest balance in a segment. List the rows ordered by market segment, then customer key.
+  gold_sql: |
+    SELECT c_mktsegment, c_custkey, c_name, c_acctbal
+    FROM (
+      SELECT c_mktsegment, c_custkey, c_name, c_acctbal,
+        RANK() OVER (PARTITION BY c_mktsegment ORDER BY c_acctbal DESC) AS balance_rank
+      FROM customer
+    ) AS ranked
+    WHERE balance_rank = 1
+    ORDER BY c_mktsegment, c_custkey
