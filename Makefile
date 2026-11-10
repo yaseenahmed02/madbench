@@ -4,7 +4,7 @@ setup:
 	bash scripts/setup/setup_all.sh
 
 test:
-	.venv/bin/python -m pytest tests -q
+	uv run --all-extras python -m pytest tests -q
 
 smoke:
 	bash scripts/smoke.sh

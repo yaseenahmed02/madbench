@@ -5,12 +5,10 @@ protocol so it can be exercised end-to-end against stubs in unit tests, and
 against a real LLM provider and the MCP Python SDK in a run.
 
 Constraints (locked by scope):
-  - max 10 tool calls per query
-  - max 3 retries per logical query (a "retry" is detected post-hoc: a
-    re-issue of the same tool with the same logical intent within 3 s of
-    a failed call)
-  - outcome: correct_unverified | incorrect_unverified | timeout |
-    call_limit_exceeded
+  - max 10 model iterations per query; each iteration may request
+    several tool calls
+  - more than 3 retries ends the attempt (a retry is the same tool
+    issued again after an error)
 
 The harness owns correctness checking — the agent loop only knows whether a
 result was submitted. ``CORRECT_UNVERIFIED`` means "submit_answer was called";
